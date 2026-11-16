@@ -176,21 +176,29 @@ export class RoundView {
       this.replaysUsed++;
     }
     const first = !this.heard;
-    this.heard = true;
-    this.playing = true;
-    const answers = this.$(".answers");
-    answers.classList.remove("is-waiting");
-    answers.querySelectorAll(".answer").forEach((b) => b.removeAttribute("aria-disabled"));
-    this.drawStage(instrument.isLoaded() ? "" : `Loading ${this.hooks.settings().instrument}...`);
-    this.drawMain();
     const q = this.q();
+    this.playing = true;
     try {
+      // Answers unlock only once the sound can really play, so nobody answers during "Loading".
+      if (!instrument.isLoaded()) {
+        this.drawStage(`Loading ${this.hooks.settings().instrument}...`);
+        this.drawMain();
+        await instrument.ensureReady();
+        if (this.q() !== q || this.phase !== "ready") return;
+      }
+      this.heard = true;
+      const answers = this.$(".answers");
+      answers.classList.remove("is-waiting");
+      answers.querySelectorAll(".answer").forEach((b) => b.removeAttribute("aria-disabled"));
+      this.drawStage();
+      this.drawMain();
       await instrument.play(q.sound);
     } catch {
       this.playing = false;
       this.drawStage("Sound could not load. Check your connection and try again.");
       this.hooks.announce("Sound could not load.");
       if (first) this.heard = false;
+      else this.replaysUsed--;
       this.drawMain();
       return;
     }

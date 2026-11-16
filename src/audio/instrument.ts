@@ -67,6 +67,9 @@ class Instrument {
 
   /** Must be called from a tap, click or key press. Loads the chosen instrument. */
   async ensureReady(): Promise<Tone.Sampler> {
+    // iPhones mute web audio when the ring switch is on silent, unless the page says it plays media.
+    const nav = navigator as Navigator & { audioSession?: { type: string } };
+    if (nav.audioSession) nav.audioSession.type = "playback";
     await Tone.start();
     if (!this.reverb) {
       this.reverb = new Tone.Reverb({ decay: 1.6, wet: 0.12 }).toDestination();
