@@ -4,7 +4,7 @@ An 8-bit ear and theory trainer for your phone. Quick rounds of 10 questions: he
 
 **Play it: [ethanmanco.github.io/earcade](https://ethanmanco.github.io/earcade/)**
 
-> Work in progress. Intervals is playable at all four levels; Chords, Scale degrees, Fretboard, and XP, streaks and stats are next.
+> Work in progress. Intervals and Chords are playable at all four levels; Scale degrees, Fretboard, and XP, streaks and stats are next.
 
 ## Modes and levels
 
@@ -13,7 +13,7 @@ Every mode has four levels. Pick any level; after a strong round the game sugges
 | Mode | Beginner | Intermediate | Professional | Master |
 | --- | --- | --- | --- | --- |
 | **Intervals**: hear two notes, name the interval | Minor 3rd, major 3rd, perfect 5th, octave. Going up. | Every interval within an octave. Going up. | Every interval within an octave: up, down and together. | Up to two octaves, every direction, one replay, 8 seconds. |
-| **Chords** (coming) | Major or minor | Adds diminished, augmented, sus2, sus4 | 7th chords | Inversions and extended chords |
+| **Chords**: hear a chord, name its quality | Major or minor. | Adds diminished, augmented, sus2 and sus4. | 7th chords: major 7, dominant 7, minor 7, minor 7 flat 5 (half diminished), diminished 7. | 7th chords in every inversion and in drop 2 voicings, plus dominant 9, major 9, minor 9, minor 11 and dominant 13 in close, open and shell voicings. One replay. |
 | **Scale degrees** (coming) | 1, 3 and 5 in major keys | All 7 degrees, major keys | Major and minor keys, with chromatic notes | Random keys, two-note phrases, the key plays once |
 | **Fretboard** (coming) | Natural notes, two lowest strings, frets 0 to 5 | Natural notes, all strings, frets 0 to 12 | Sharps and flats, frets 0 to 12 | The whole neck to fret 15, timed |
 
@@ -32,7 +32,7 @@ Every mode has four levels. Pick any level; after a strong round the game sugges
 
 ## Built with
 
-Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and question code is kept apart from the screen and tested on its own: every interval is checked in every key, and every level is checked to ask only what it should.
+Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and question code is kept apart from the screen and tested on its own: every interval and chord is checked in every key, every inversion and voicing is checked, and every level is checked to ask only what it should.
 
 Parts come from my other projects:
 

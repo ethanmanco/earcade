@@ -8,6 +8,7 @@ import { modeInfo, modeRules } from "../quiz/modes";
 import type { Round } from "../quiz/round";
 import { LEVEL_NAMES, type AudioStep, type Question } from "../quiz/types";
 import { esc } from "./html";
+import { prettyNotes, sayNotes } from "./notes";
 import { sprite } from "./sprites";
 
 export interface RoundHooks {
@@ -288,7 +289,7 @@ export class RoundView {
     this.$(".stage").innerHTML = `
       <div class="verdict ${a.correct ? "is-right" : "is-wrong"}">${sprite(a.correct ? "check" : "cross", 4)}<span>${verdict}</span></div>
       <p class="verdict-answer">${a.correct ? "" : "Answer: "}${esc(cap(right.spoken))} (${esc(right.label)})</p>
-      <p class="verdict-explain">${esc(q.explain)}${picked && !a.correct ? `<br>You picked ${esc(picked.spoken)}` : ""}</p>
+      <p class="verdict-explain">${prettyNotes(q.explain)}${picked && !a.correct ? `<br>You picked ${esc(picked.spoken)}` : ""}</p>
       <div class="row">
         <button class="btn btn--small" type="button" data-act="again">${sprite("replay", 2)} Hear it again</button>
         ${picked && !a.correct && q.compare ? `<button class="btn btn--small" type="button" data-act="yours">${sprite("play", 2)} Hear yours</button>` : ""}
@@ -296,8 +297,8 @@ export class RoundView {
     this.drawMain();
 
     const said = a.correct
-      ? `Correct, ${right.spoken}. ${q.explain}.`
-      : `${verdict}. It was ${right.spoken}. ${q.explain}.${picked ? ` You picked ${picked.spoken}.` : ""}`;
+      ? `Correct, ${right.spoken}. ${sayNotes(q.explain)}.`
+      : `${verdict}. It was ${right.spoken}. ${sayNotes(q.explain)}.${picked ? ` You picked ${picked.spoken}.` : ""}`;
     this.hooks.announce(said);
     if (a.correct) sfx.correct();
     else sfx.wrong();

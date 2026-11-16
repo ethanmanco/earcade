@@ -178,7 +178,9 @@ h1, h2, h3, p { margin: 0; }
 .verdict.is-right { background: var(--right); }
 .verdict.is-wrong { background: var(--wrong); }
 .verdict-answer { font-size: 17px; }
-.verdict-explain { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.verdict-explain { font-size: 13px; color: var(--muted); line-height: 1.5; }
+/* Flat and sharp signs: the pixel font has none, so a system font draws them. */
+.acc { font-family: "Segoe UI Symbol", "Noto Music", "Apple Symbols", system-ui, sans-serif; font-weight: 700; font-size: 1.15em; line-height: 1; }
 
 .answers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .answers[data-count="12"] { grid-template-columns: repeat(3, 1fr); }
