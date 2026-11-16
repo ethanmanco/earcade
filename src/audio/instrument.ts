@@ -1,152 +1,146 @@
-import * as Tone from 'tone';
+// The musical sound: a sampled piano or guitar. Adapted from Sixline's
+// GuitarSound (src/audio/guitar.ts) so it can load either instrument.
+//
+// Nothing loads or plays until a tap calls `ensureReady()`, which is also what
+// browsers require before audio can start.
 
-/**
- * Guitar sound. Nothing loads or plays until a user action calls
- * `ensureReady()`, which is also what browsers require before audio can start.
- */
+import * as Tone from "tone";
+import type { AudioStep } from "../quiz/types";
 
-const FIRST_SAMPLE = 40; // E2
-const LAST_SAMPLE = 79; // G5
-const FLAT_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+export type InstrumentId = "piano" | "guitar";
 
-function sampleUrls(): Record<number, string> {
+const FLAT_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+/** Guitar: every note E2 to G5 (Sixline's FluidR3 set). */
+function guitarUrls(): Record<number, string> {
   const urls: Record<number, string> = {};
-  for (let m = FIRST_SAMPLE; m <= LAST_SAMPLE; m++) {
-    urls[m] = `${FLAT_NAMES[m % 12]}${Math.floor(m / 12) - 1}.mp3`;
-  }
+  for (let m = 40; m <= 79; m++) urls[m] = `${FLAT_NAMES[m % 12]}${Math.floor(m / 12) - 1}.mp3`;
   return urls;
 }
 
-export interface SequenceOptions {
-  /** Seconds between notes. */
-  step?: number;
-  /** Called in sync with the sound, once per note. */
-  onNote?: (index: number) => void;
-  /** Called after the last note, or when the sequence is stopped. */
-  onEnd?: () => void;
+/** Piano: Salamander, one sample every minor third, A1 to D#6. */
+function pianoUrls(): Record<number, string> {
+  const urls: Record<number, string> = {};
+  const names: Record<number, string> = { 9: "A", 0: "C", 3: "Ds", 6: "Fs" };
+  for (let m = 33; m <= 87; m += 3) urls[m] = `${names[m % 12]}${Math.floor(m / 12) - 1}.mp3`;
+  return urls;
 }
 
-export interface StrumOptions {
-  /** Seconds between strings in the strum. */
-  spread?: number;
-  onStart?: () => void;
-  onEnd?: () => void;
-}
+const SETUP: Record<InstrumentId, { urls: () => Record<number, string>; folder: string; volume: number; release: number; spread: number }> = {
+  piano: { urls: pianoUrls, folder: "piano", volume: -2, release: 1, spread: 0 },
+  // Chords on guitar are strummed a little, low to high, like Sixline.
+  guitar: { urls: guitarUrls, folder: "guitar", volume: -4, release: 1.2, spread: 0.03 },
+};
 
-class GuitarSound {
-  private sampler: Tone.Sampler | null = null;
-  private loading: Promise<void> | null = null;
+type LoadState = "loading" | "ready" | "error";
+
+class Instrument {
+  private samplers = new Map<InstrumentId, Tone.Sampler>();
+  private loading = new Map<InstrumentId, Promise<Tone.Sampler>>();
+  private reverb: Tone.Reverb | null = null;
+  private current: InstrumentId = "piano";
   private endCurrent: (() => void) | null = null;
-  private listeners = new Set<(state: 'loading' | 'ready' | 'error') => void>();
+  private timer: number | null = null;
+  private listeners = new Set<(state: LoadState) => void>();
+  private volume = 0.8;
 
-  /** Subscribe to loading state, e.g. to show "Loading sound". */
-  onState(fn: (state: 'loading' | 'ready' | 'error') => void): () => void {
+  onState(fn: (state: LoadState) => void): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
   }
 
-  get isReady(): boolean {
-    return this.sampler?.loaded ?? false;
+  setInstrument(id: InstrumentId): void {
+    this.current = id;
   }
 
-  /** Must be called from a user gesture (click, tap, key press). */
-  async ensureReady(): Promise<void> {
+  /** 0 to 1. */
+  setVolume(v: number): void {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.reverb) this.applyVolume();
+  }
+
+  private applyVolume(): void {
+    const dest = Tone.getDestination();
+    dest.mute = this.volume === 0;
+    if (this.volume > 0) dest.volume.value = Tone.gainToDb(this.volume);
+  }
+
+  /** Must be called from a tap, click or key press. Loads the chosen instrument. */
+  async ensureReady(): Promise<Tone.Sampler> {
     await Tone.start();
-    if (!this.loading) {
-      this.emit('loading');
-      this.loading = new Promise<void>((resolve, reject) => {
-        const reverb = new Tone.Reverb({ decay: 1.6, wet: 0.14 }).toDestination();
-        this.sampler = new Tone.Sampler({
-          urls: sampleUrls(),
-          baseUrl: `${import.meta.env.BASE_URL}samples/guitar/`,
-          release: 1.2,
-          onload: () => {
-            this.emit('ready');
-            resolve();
-          },
-          onerror: (err) => {
-            this.emit('error');
-            this.loading = null;
-            reject(err);
-          },
-        }).connect(reverb);
-        this.sampler.volume.value = -4;
-      });
+    if (!this.reverb) {
+      this.reverb = new Tone.Reverb({ decay: 1.6, wet: 0.12 }).toDestination();
+      this.applyVolume();
     }
-    return this.loading;
-  }
-
-  /** Plays one note right away. */
-  async play(midi: number, duration = 1.6): Promise<void> {
-    await this.ensureReady();
-    this.sampler?.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), duration);
+    const id = this.current;
+    const have = this.loading.get(id);
+    if (have) return have;
+    this.emit("loading");
+    const setup = SETUP[id];
+    const p = new Promise<Tone.Sampler>((resolve, reject) => {
+      const s = new Tone.Sampler({
+        urls: setup.urls(),
+        baseUrl: `${import.meta.env.BASE_URL}samples/${setup.folder}/`,
+        release: setup.release,
+        onload: () => {
+          this.samplers.set(id, s);
+          this.emit("ready");
+          resolve(s);
+        },
+        onerror: (err) => {
+          this.loading.delete(id);
+          this.emit("error");
+          reject(err);
+        },
+      }).connect(this.reverb!);
+      s.volume.value = setup.volume;
+    });
+    this.loading.set(id, p);
+    return p;
   }
 
   /**
-   * Plays steps one after another, with a callback in time with each step.
-   * A step is one note, or several notes strummed low to high.
+   * Plays a clip of steps and resolves when it has finished sounding (or is
+   * stopped). Each step's notes start together, or strummed on guitar.
    */
-  async sequence(steps: readonly (number | readonly number[])[], opts: SequenceOptions = {}): Promise<void> {
-    await this.ensureReady();
+  async play(steps: readonly AudioStep[]): Promise<void> {
+    const sampler = await this.ensureReady();
     this.stop();
-    const step = opts.step ?? 0.3;
+    const spread = SETUP[this.current].spread;
+    // Scheduled on the transport (as in Sixline) so stop() can cancel notes that have not started yet.
     const transport = Tone.getTransport();
-    const draw = Tone.getDraw();
-    const sampler = this.sampler!;
-    let ended = false;
-    const end = () => {
-      if (ended) return;
-      ended = true;
-      if (this.endCurrent === end) this.endCurrent = null;
-      opts.onEnd?.();
-    };
-    this.endCurrent = end;
-
-    steps.forEach((notes, i) => {
-      const chord = typeof notes === 'number' ? [notes] : notes;
-      const last = i === steps.length - 1;
+    for (const step of steps) {
       transport.scheduleOnce((time) => {
-        chord.forEach((midi, k) => {
-          sampler.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), last ? 2.4 : step * 2.4, time + k * 0.035);
+        step.midis.forEach((midi, k) => {
+          sampler.triggerAttackRelease(Tone.Frequency(midi, "midi").toFrequency(), step.dur, time + k * spread);
         });
-        draw.schedule(() => {
-          if (!ended) opts.onNote?.(i);
-        }, time);
-      }, i * step);
-    });
-    const tail = typeof steps[steps.length - 1] === 'number' ? 0.1 : 1.2;
-    transport.scheduleOnce((time) => draw.schedule(end, time), (steps.length - 1) * step + step + tail);
+      }, step.at);
+    }
     transport.position = 0;
-    transport.start('+0.05');
-  }
-
-  /** Strums notes low to high, like a chord. */
-  async strum(midis: readonly number[], opts: StrumOptions = {}): Promise<void> {
-    await this.ensureReady();
-    this.stop();
-    const spread = opts.spread ?? 0.035;
-    const now = Tone.now() + 0.03;
-    midis.forEach((midi, i) => {
-      this.sampler?.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), 2.4, now + i * spread);
+    transport.start("+0.05");
+    const length = Math.max(0, ...steps.map((s) => s.at + s.dur));
+    return new Promise<void>((resolve) => {
+      let ended = false;
+      const end = () => {
+        if (ended) return;
+        ended = true;
+        if (this.endCurrent === end) this.endCurrent = null;
+        if (this.timer !== null) window.clearTimeout(this.timer);
+        this.timer = null;
+        resolve();
+      };
+      this.endCurrent = end;
+      // Counted as "done" a little before the last note fades, so answering feels quick.
+      this.timer = window.setTimeout(end, (length * 0.85 + 0.05) * 1000);
     });
-    opts.onStart?.();
-    let ended = false;
-    const end = () => {
-      if (ended) return;
-      ended = true;
-      if (this.endCurrent === end) this.endCurrent = null;
-      opts.onEnd?.();
-    };
-    this.endCurrent = end;
-    Tone.getDraw().schedule(end, now + 1.2);
   }
 
-  /** Stops any sequence in progress. */
+  /** Cuts off whatever is playing. */
   stop(): void {
     const transport = Tone.getTransport();
     transport.stop();
     transport.cancel(0);
-    this.sampler?.releaseAll();
+    for (const s of this.samplers.values()) s.releaseAll();
     const end = this.endCurrent;
     this.endCurrent = null;
     end?.();
@@ -156,10 +150,10 @@ class GuitarSound {
     return this.endCurrent !== null;
   }
 
-  private emit(state: 'loading' | 'ready' | 'error') {
+  private emit(state: LoadState) {
     for (const fn of this.listeners) fn(state);
   }
 }
 
-/** One shared guitar for the whole app (Learn now, Jam and Songs later). */
-export const guitar = new GuitarSound();
+/** One shared instrument for the whole app. */
+export const instrument = new Instrument();
