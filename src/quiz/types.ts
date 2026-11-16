@@ -27,6 +27,8 @@ export interface Choice {
   label: string;
   /** Read aloud and shown small under the label, e.g. "perfect 5th". */
   spoken: string;
+  /** Shown small under the label instead of `spoken`, when that would repeat the label. */
+  sub?: string;
 }
 
 export interface Question {
@@ -40,6 +42,13 @@ export interface Question {
   tag?: string;
   /** What plays when the player taps Play. */
   sound: AudioStep[];
+  /** What a replay plays, when it differs (Scale degrees Master: the note again, not the key). */
+  replay?: AudioStep[];
+  /**
+   * For questions answered with more than one pick (two-note phrases): the
+   * item id of each pick, in order. The answer is these ids joined by spaces.
+   */
+  parts?: string[];
   choices: Choice[];
   /** The id of the right choice. */
   answer: string;
@@ -72,3 +81,9 @@ export interface LevelRules {
 
 /** Recent results per item, newest last, true = right. */
 export type ItemHistory = Record<string, boolean[]>;
+
+/** Shared by every question in a round: the player's history, and anything a mode keeps for the round (a key). */
+export interface RoundContext {
+  history: ItemHistory;
+  key?: { tonic: string; mode: "major" | "minor" };
+}

@@ -2,17 +2,25 @@
 // No screen and no sound here, so it can be tested directly.
 
 import { pickItems } from "./adaptive";
-import { modeRules, makeQuestion } from "./modes";
+import { makeQuestion, modeRules, roundContext } from "./modes";
 import type { Rng } from "./rng";
 import type { ItemHistory, LevelId, ModeId, Question } from "./types";
 
 export const ROUND_LENGTH = 10;
 
+/** One item's result inside an answer (a two-note phrase has two). */
+export interface PartResult {
+  itemId: string;
+  correct: boolean;
+}
+
 export interface Answer {
   itemId: string;
-  /** Choice id picked, or null when time ran out. */
+  /** Choice id picked (ids joined by spaces for several picks), or null when time ran out. */
   chosen: string | null;
+  /** Right only when every pick is right. */
   correct: boolean;
+  parts: PartResult[];
 }
 
 export interface ItemScore {
@@ -34,6 +42,11 @@ export interface RoundSummary {
   practice: ItemScore[];
 }
 
+/** The item ids a question asks, one per pick. */
+export function partsOf(q: Question): string[] {
+  return q.parts ?? [q.answer];
+}
+
 export class Round {
   readonly questions: Question[];
   readonly answers: Answer[] = [];
@@ -45,7 +58,8 @@ export class Round {
     rng: Rng,
   ) {
     const rules = modeRules(mode, level);
-    this.questions = pickItems(rules.items, history, rng, ROUND_LENGTH).map((id) => makeQuestion(mode, level, id, rng));
+    const ctx = roundContext(mode, level, history, rng);
+    this.questions = pickItems(rules.items, history, rng, ROUND_LENGTH).map((id) => makeQuestion(mode, level, id, rng, ctx));
   }
 
   get index(): number {
@@ -64,7 +78,9 @@ export class Round {
   answer(choiceId: string | null): Answer {
     const q = this.current;
     if (!q) throw new Error("The round is over");
-    const a: Answer = { itemId: q.itemId, chosen: choiceId, correct: choiceId === q.answer };
+    const picked = choiceId ? choiceId.split(" ") : [];
+    const parts = partsOf(q).map((itemId, i) => ({ itemId, correct: picked[i] === itemId }));
+    const a: Answer = { itemId: q.itemId, chosen: choiceId, correct: choiceId === q.answer, parts };
     this.answers.push(a);
     return a;
   }
@@ -78,11 +94,13 @@ export class Round {
     const first = this.questions[0]!;
     const byId = new Map<string, ItemScore>();
     for (const a of this.answers) {
-      const choice = first.choices.find((c) => c.id === a.itemId);
-      const s = byId.get(a.itemId) ?? { itemId: a.itemId, label: choice?.label ?? a.itemId, spoken: choice?.spoken ?? a.itemId, right: 0, total: 0 };
-      s.total++;
-      if (a.correct) s.right++;
-      byId.set(a.itemId, s);
+      for (const p of a.parts) {
+        const choice = first.choices.find((c) => c.id === p.itemId);
+        const s = byId.get(p.itemId) ?? { itemId: p.itemId, label: choice?.label ?? p.itemId, spoken: choice?.spoken ?? p.itemId, right: 0, total: 0 };
+        s.total++;
+        if (p.correct) s.right++;
+        byId.set(p.itemId, s);
+      }
     }
     const items = rules.items.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
     const practice = items.filter((s) => s.right < s.total).sort((a, b) => a.right / a.total - b.right / b.total);

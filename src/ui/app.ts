@@ -19,6 +19,7 @@ import {
   type Settings,
 } from "../progress/storage";
 import { esc, frac } from "./html";
+import { prettyNotes } from "./notes";
 import { RoundView } from "./roundView";
 import { paintSpace } from "./space";
 import { logo, sprite, type SpriteName } from "./sprites";
@@ -211,8 +212,8 @@ export class App {
     const view = new RoundView(round, {
       settings: () => this.settings,
       announce: (t) => this.announce(t),
-      onAnswer: (q, correct) => {
-        recordResult(this.saved.history, historyKey(q.mode, q.level, q.itemId), correct);
+      onAnswer: (q, answer) => {
+        for (const part of answer.parts) recordResult(this.saved.history, historyKey(q.mode, q.level, part.itemId), part.correct);
         this.persist();
       },
       onQuit: () => {
@@ -247,7 +248,7 @@ export class App {
     const rows = s.items
       .map(
         (it) => `<li class="item-row">
-          <span class="item-name">${esc(cap(it.spoken))} (${esc(it.label)})</span>
+          <span class="item-name">${esc(cap(it.spoken))} <span aria-hidden="true">(${prettyNotes(it.label)})</span></span>
           <span class="item-score">${it.right} of ${it.total}</span>
           <span class="item-bar" aria-hidden="true">${Array.from({ length: it.total }, (_, i) => `<i class="${i < it.right ? "is-right" : "is-wrong"}"></i>`).join("")}</span>
         </li>`,

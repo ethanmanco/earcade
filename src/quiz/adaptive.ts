@@ -46,6 +46,19 @@ export function pickItems(items: readonly string[], history: ItemHistory, rng: R
   return out;
 }
 
+/** One item by weight, leaving out `except` when there is anything else to pick. */
+export function pickOne(items: readonly string[], history: ItemHistory, rng: Rng, except?: string): string {
+  const pool = items.filter((id) => id !== except);
+  const from = pool.length ? pool : [...items];
+  const weights = from.map((id) => itemWeight(history[id]));
+  let r = rng.next() * weights.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < from.length; k++) {
+    r -= weights[k]!;
+    if (r < 0) return from[k]!;
+  }
+  return from[from.length - 1]!;
+}
+
 /** Adds one result to an item's history, keeping the most recent HISTORY_LENGTH. */
 export function recordResult(history: ItemHistory, itemId: string, correct: boolean): void {
   const h = (history[itemId] ??= []);

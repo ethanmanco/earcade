@@ -5,7 +5,7 @@ import { instrument } from "../audio/instrument";
 import { sfx } from "../audio/sfx";
 import type { Settings } from "../progress/storage";
 import { modeInfo, modeRules } from "../quiz/modes";
-import type { Round } from "../quiz/round";
+import { partsOf, type Answer, type Round } from "../quiz/round";
 import { LEVEL_NAMES, type AudioStep, type Question } from "../quiz/types";
 import { esc } from "./html";
 import { prettyNotes, sayNotes } from "./notes";
@@ -14,7 +14,7 @@ import { sprite } from "./sprites";
 export interface RoundHooks {
   settings(): Settings;
   /** Called once per answered question. */
-  onAnswer(q: Question, correct: boolean): void;
+  onAnswer(q: Question, answer: Answer): void;
   onDone(round: Round): void;
   onQuit(): void;
   announce(text: string): void;
@@ -34,6 +34,8 @@ export class RoundView {
   private timerId: number | null = null;
   private autoplayId: number | null = null;
   private chosen: string | null = null;
+  /** Picks so far, for questions that take more than one (two-note phrases). */
+  private picks: string[] = [];
   private readonly onKey = (e: KeyboardEvent) => this.key(e);
   private readonly rules;
 
@@ -92,6 +94,7 @@ export class RoundView {
     this.heard = false;
     this.replaysUsed = 0;
     this.chosen = null;
+    this.picks = [];
     this.$(".counter").innerHTML = `<span aria-hidden="true">${n}/${total}</span><span class="sr-only">Question ${n} of ${total}</span>`;
     this.el.querySelectorAll(".pip").forEach((p, i) => p.classList.toggle("is-now", i === this.round.index));
 
@@ -104,8 +107,8 @@ export class RoundView {
         return `<button class="answer" type="button" data-choice="${esc(c.id)}" aria-disabled="true"
           aria-label="${esc(c.spoken)}${q.choices.length > 12 ? `, ${esc(c.label)}` : ""}"${key ? ` aria-keyshortcuts="${key}"` : ""}>
           ${key ? `<kbd aria-hidden="true">${key}</kbd>` : ""}
-          <span class="answer-label" aria-hidden="true">${esc(c.label)}</span>
-          <span class="answer-spoken" aria-hidden="true">${esc(c.spoken)}</span>
+          <span class="answer-label" aria-hidden="true">${prettyNotes(c.label)}</span>
+          <span class="answer-spoken" aria-hidden="true">${esc(c.sub ?? c.spoken)}</span>
         </button>`;
       })
       .join("");
@@ -128,9 +131,10 @@ export class RoundView {
         : "Replay as often as you like";
     this.$(".stage").innerHTML = `
       <p class="prompt">${esc(q.prompt)}</p>
-      ${q.tag ? `<p class="tag">${esc(q.tag)}</p>` : ""}
+      ${q.tag ? `<p class="tag">${prettyNotes(q.tag)}</p>` : ""}
       <div class="speaker${this.playing ? " is-playing" : ""}" aria-hidden="true">${sprite("speaker", 6)}</div>
       <p class="stage-note">${esc(note || replayText)}</p>
+      ${q.parts && this.heard ? `<p class="stage-note pick-note">Pick note ${Math.min(this.picks.length + 1, q.parts.length)} of ${q.parts.length}</p>` : ""}
       ${this.rules.timeLimit !== null && this.timerSeconds() > 0 ? `<div class="timer" hidden><div class="timer-bar"><i></i></div><span class="timer-text"></span></div>` : ""}`;
   }
 
@@ -147,7 +151,8 @@ export class RoundView {
     const left = this.replaysLeft();
     if (!this.heard) {
       btn.innerHTML = `${sprite("play", 3)} Play`;
-      btn.setAttribute("aria-label", `Play question ${n}`);
+      const q = this.q();
+      btn.setAttribute("aria-label", `Play question ${n}${q.tag ? `, ${sayNotes(q.tag)}` : ""}`);
     } else {
       btn.innerHTML = `${sprite("replay", 3)} Replay${Number.isFinite(left) ? ` (${left})` : ""}`;
       btn.setAttribute("aria-label", Number.isFinite(left) ? `Replay, ${left} left` : "Replay");
@@ -193,7 +198,7 @@ export class RoundView {
       answers.querySelectorAll(".answer").forEach((b) => b.removeAttribute("aria-disabled"));
       this.drawStage();
       this.drawMain();
-      await instrument.play(q.sound);
+      await instrument.play(first ? q.sound : (q.replay ?? q.sound));
     } catch {
       this.playing = false;
       this.drawStage("Sound could not load. Check your connection and try again.");
@@ -261,21 +266,33 @@ export class RoundView {
     const a = this.round.answer(choiceId);
     this.chosen = choiceId;
     this.phase = "feedback";
-    this.hooks.onAnswer(q, a.correct);
+    this.hooks.onAnswer(q, a);
+    const rightIds = partsOf(q);
+    const pickedIds = choiceId ? choiceId.split(" ") : [];
+    const order = (ids: string[], id: string) =>
+      ids.length > 1 ? ids.map((x, i) => (x === id ? ["1st", "2nd"][i] : null)).filter(Boolean).join(" and ") : "";
 
     const answers = this.$(".answers");
     answers.classList.add("is-done");
     answers.querySelectorAll<HTMLElement>(".answer").forEach((b) => {
       b.setAttribute("aria-disabled", "true");
-      const id = b.dataset.choice;
-      if (id === q.answer) {
+      b.classList.remove("is-picked");
+      b.removeAttribute("aria-pressed");
+      b.querySelector(".pick-badge")?.remove();
+      const id = b.dataset.choice!;
+      const base = b.getAttribute("aria-label")!;
+      if (rightIds.includes(id)) {
+        const which = order(rightIds, id);
         b.classList.add("is-right");
-        b.insertAdjacentHTML("beforeend", `<span class="answer-mark" aria-hidden="true">${sprite("check", 2)}</span>`);
-        b.setAttribute("aria-label", `${b.getAttribute("aria-label")}, right answer`);
-      } else if (id === choiceId) {
+        b.insertAdjacentHTML(
+          "beforeend",
+          `<span class="answer-mark" aria-hidden="true">${sprite("check", 2)}</span>${which ? `<span class="pick-badge" aria-hidden="true">${which.replace(" and ", "+")}</span>` : ""}`,
+        );
+        b.setAttribute("aria-label", `${base}, right answer${which ? ` for the ${which} note` : ""}`);
+      } else if (pickedIds.includes(id)) {
         b.classList.add("is-wrong");
         b.insertAdjacentHTML("beforeend", `<span class="answer-mark" aria-hidden="true">${sprite("cross", 2)}</span>`);
-        b.setAttribute("aria-label", `${b.getAttribute("aria-label")}, your answer, wrong`);
+        b.setAttribute("aria-label", `${base}, your answer, wrong`);
       }
     });
     const pip = this.el.querySelectorAll(".pip")[index] as HTMLElement;
@@ -283,12 +300,14 @@ export class RoundView {
     pip.classList.add(a.correct ? "is-right" : "is-wrong");
     pip.innerHTML = sprite(a.correct ? "check" : "cross", 2);
 
-    const right = q.choices.find((c) => c.id === q.answer)!;
-    const picked = choiceId ? q.choices.find((c) => c.id === choiceId) : null;
+    const spokenOf = (ids: string[]) => ids.map((id) => q.choices.find((c) => c.id === id)!.spoken).join(", then ");
+    const labelOf = (ids: string[]) => ids.map((id) => q.choices.find((c) => c.id === id)!.label).join(" ");
+    const right = { spoken: spokenOf(rightIds), label: labelOf(rightIds) };
+    const picked = choiceId ? { spoken: spokenOf(pickedIds), label: labelOf(pickedIds) } : null;
     const verdict = a.correct ? "Correct" : choiceId === null ? "Time's up" : "Not quite";
     this.$(".stage").innerHTML = `
       <div class="verdict ${a.correct ? "is-right" : "is-wrong"}">${sprite(a.correct ? "check" : "cross", 4)}<span>${verdict}</span></div>
-      <p class="verdict-answer">${a.correct ? "" : "Answer: "}${esc(cap(right.spoken))} (${esc(right.label)})</p>
+      <p class="verdict-answer">${a.correct ? "" : "Answer: "}${esc(cap(right.spoken))} ${right.spoken.startsWith(`${right.label},`) ? "" : `<span aria-hidden="true">(${prettyNotes(right.label)})</span>`}</p>
       <p class="verdict-explain">${prettyNotes(q.explain)}${picked && !a.correct ? `<br>You picked ${esc(picked.spoken)}` : ""}</p>
       <div class="row">
         <button class="btn btn--small" type="button" data-act="again">${sprite("replay", 2)} Hear it again</button>
@@ -308,6 +327,34 @@ export class RoundView {
         if (this.phase === "feedback" && this.q() === q) void this.playClip(q.reveal);
       }, 650);
     }
+  }
+
+  /** A tap on an answer: answers at once, or collects picks for a two-note phrase. */
+  private pick(id: string): void {
+    const q = this.q();
+    if (!q.parts) return this.answer(id);
+    const btn = this.el.querySelector<HTMLElement>(`.answer[data-choice="${CSS.escape(id)}"]`);
+    // Tapping your first pick again takes it back.
+    if (this.picks.length === 1 && this.picks[0] === id) {
+      this.picks = [];
+      btn?.classList.remove("is-picked");
+      btn?.querySelector(".pick-badge")?.remove();
+      btn?.removeAttribute("aria-pressed");
+      this.hooks.announce("First pick cleared");
+      this.drawStage();
+      return;
+    }
+    this.picks.push(id);
+    if (this.picks.length < q.parts.length) {
+      btn?.classList.add("is-picked");
+      btn?.setAttribute("aria-pressed", "true");
+      btn?.insertAdjacentHTML("beforeend", `<span class="pick-badge" aria-hidden="true">1st</span>`);
+      const spoken = q.choices.find((c) => c.id === id)?.spoken ?? id;
+      this.hooks.announce(`First note: ${spoken}. Now the second note.`);
+      this.drawStage();
+      return;
+    }
+    this.answer(this.picks.join(" "));
   }
 
   private async playClip(steps: AudioStep[]): Promise<void> {
@@ -332,7 +379,7 @@ export class RoundView {
     if (!t) return;
     const act = t.dataset.act;
     if (t.dataset.choice !== undefined) {
-      if (this.phase === "ready" && t.getAttribute("aria-disabled") !== "true") this.answer(t.dataset.choice);
+      if (this.phase === "ready" && t.getAttribute("aria-disabled") !== "true") this.pick(t.dataset.choice);
       return;
     }
     switch (act) {
@@ -368,7 +415,7 @@ export class RoundView {
       const choice = this.q().choices[i];
       if (choice && this.heard) {
         e.preventDefault();
-        this.answer(choice.id);
+        this.pick(choice.id);
       }
       return;
     }

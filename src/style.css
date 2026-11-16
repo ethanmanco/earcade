@@ -213,6 +213,13 @@ h1, h2, h3, p { margin: 0; }
 .answer.is-right { background: var(--right); box-shadow: inset 0 0 0 3px var(--gold); }
 .answer.is-wrong { background: var(--wrong); }
 .answers.is-done .answer:not(.is-right):not(.is-wrong) { opacity: 0.45; }
+/* Two-note phrases: the first pick is marked with a badge and a gold border, not only a color. */
+.answer.is-picked { box-shadow: inset 0 0 0 3px var(--gold); background: var(--btn-hi); }
+.pick-badge {
+  position: absolute; bottom: 4px; right: 5px; font-size: 9px; color: #1a1408; background: var(--gold);
+  padding: 2px 4px 1px; text-shadow: none;
+}
+.pick-note { color: var(--gold); }
 
 .main-btn { min-height: 64px; font-size: 20px; }
 
