@@ -103,3 +103,30 @@ describe("round screen replays", () => {
     expect(played.at(-1)).toEqual(q.reveal);
   });
 });
+
+describe("fretboard round screen", () => {
+  it("taps on the neck answer, unused strings do nothing, and the answer is shown", async () => {
+    played.length = 0;
+    const round = new Round("fretboard", "beginner", {}, new Rng(5));
+    const settings = { ...defaultSettings(), autoplay: false };
+    const view = new RoundView(round, { settings: () => settings, announce() {}, onAnswer() {}, onDone() {}, onQuit() {} });
+    document.body.replaceChildren(view.el);
+    view.start();
+    const q = round.questions[0]!;
+    // Cells never name their note before answering.
+    for (const c of document.querySelectorAll(".board-cell")) expect(c.getAttribute("aria-label")).not.toMatch(/, [A-G]( |$|,)/);
+    // A string not used at Beginner (high E) ignores taps.
+    click(document.querySelector('.board-cell[data-s="5"][data-f="3"]'));
+    expect(round.answers).toHaveLength(0);
+    const [s, f] = q.accept![0]!.split(":");
+    click(document.querySelector(`.board-cell[data-s="${s}"][data-f="${f}"]`));
+    expect(round.answers[0]!.correct).toBe(true);
+    expect(document.querySelectorAll(".board-cell.is-right")).toHaveLength(q.accept!.length);
+    await flush();
+    // You hear the note you tapped; Hear it again plays this question's note.
+    expect(played.at(-1)![0]!.midis).toEqual([[40, 45, 50, 55, 59, 64][Number(s)]! + Number(f)]);
+    click(document.querySelector('[data-act="again"]'));
+    await flush();
+    expect(played.at(-1)).toEqual(q.reveal);
+  });
+});

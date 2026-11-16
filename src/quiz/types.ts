@@ -52,6 +52,13 @@ export interface Question {
   choices: Choice[];
   /** The id of the right choice. */
   answer: string;
+  /**
+   * When several picks count as right (any spot on the neck that plays the
+   * note), their ids. Otherwise only `answer` is right.
+   */
+  accept?: string[];
+  /** Fretboard questions: answered by tapping the neck instead of buttons. */
+  board?: { strings: number[]; frets: [number, number]; note: string };
   /** Plays after answering, so the ear hears the right answer once more. */
   reveal: AudioStep[];
   /** What it was, in words, e.g. "C up to G". */

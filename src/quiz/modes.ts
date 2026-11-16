@@ -2,6 +2,7 @@
 
 import { CHORD_LEVELS, makeChordQuestion } from "./chords";
 import { DEGREE_LEVELS, degreeRoundKey, makeDegreeQuestion } from "./degrees";
+import { FRETBOARD_LEVELS, makeFretboardQuestion } from "./fretboard";
 import { INTERVAL_LEVELS, makeIntervalQuestion } from "./intervals";
 import type { Rng } from "./rng";
 import type { ItemHistory, LevelId, LevelRules, ModeId, Question, RoundContext } from "./types";
@@ -19,7 +20,7 @@ export const MODES: readonly ModeInfo[] = [
   { id: "intervals", name: "Intervals", blurb: "Hear two notes, name the gap.", ready: true },
   { id: "chords", name: "Chords", blurb: "Hear a chord, name its quality.", ready: true },
   { id: "degrees", name: "Scale degrees", blurb: "Hear a key, then name the note.", ready: true },
-  { id: "fretboard", name: "Fretboard", blurb: "See a note, find it on the neck.", ready: false },
+  { id: "fretboard", name: "Fretboard", blurb: "See a note, find it on the neck.", ready: true },
 ];
 
 export function modeInfo(id: ModeId): ModeInfo {
@@ -34,8 +35,8 @@ export function modeRules(mode: ModeId, level: LevelId): LevelRules {
       return CHORD_LEVELS[level];
     case "degrees":
       return DEGREE_LEVELS[level];
-    default:
-      throw new Error(`${mode} is not built yet`);
+    case "fretboard":
+      return FRETBOARD_LEVELS[level];
   }
 }
 
@@ -52,7 +53,7 @@ export function makeQuestion(mode: ModeId, level: LevelId, itemId: string, rng: 
       return makeChordQuestion(level, itemId, rng);
     case "degrees":
       return makeDegreeQuestion(level, itemId, rng, ctx);
-    default:
-      throw new Error(`${mode} is not built yet`);
+    case "fretboard":
+      return makeFretboardQuestion(level, itemId, rng);
   }
 }

@@ -10,6 +10,11 @@ import { LEVEL_NAMES, type AudioStep, type Question } from "../quiz/types";
 import { esc } from "./html";
 import { prettyNotes, sayNotes } from "./notes";
 import { sprite } from "./sprites";
+import { QuizBoard } from "./board";
+import { noteSound, parsePos, posId, spokenNote } from "../quiz/fretboard";
+import { midiAt } from "../theory/guitar";
+import { spellMidi } from "../theory/spelling";
+import type { FretPos } from "../theory/types";
 
 export interface RoundHooks {
   settings(): Settings;
@@ -36,6 +41,8 @@ export class RoundView {
   private chosen: string | null = null;
   /** Picks so far, for questions that take more than one (two-note phrases). */
   private picks: string[] = [];
+  /** The neck, for Fretboard questions. */
+  private board: QuizBoard | null = null;
   private readonly onKey = (e: KeyboardEvent) => this.key(e);
   private readonly rules;
 
@@ -106,6 +113,9 @@ export class RoundView {
     this.$(".counter").innerHTML = `<span aria-hidden="true">${n}/${total}</span><span class="sr-only">Question ${n} of ${total}</span>`;
     this.el.querySelectorAll(".pip").forEach((p, i) => p.classList.toggle("is-now", i === this.round.index));
 
+    if (q.board) return this.showBoardQuestion(q, n);
+    this.board = null;
+
     const answers = this.$(".answers");
     answers.dataset.count = String(q.choices.length > 12 ? 24 : q.choices.length > 6 ? 12 : q.choices.length);
     answers.className = "answers is-waiting";
@@ -127,8 +137,42 @@ export class RoundView {
     if (this.hooks.settings().autoplay) this.autoplayId = window.setTimeout(() => void this.play(), 450);
   }
 
+  /** Fretboard: the note to find is shown, and the neck takes the place of the answer buttons. */
+  private showBoardQuestion(q: Question, n: number): void {
+    const b = q.board!;
+    const answers = this.$(".answers");
+    answers.className = "answers answers--board";
+    answers.removeAttribute("data-count");
+    answers.removeAttribute("aria-label");
+    answers.removeAttribute("role");
+    this.board = new QuizBoard({ strings: b.strings, frets: b.frets, onPick: (p) => this.tapBoard(p) });
+    answers.replaceChildren(this.board.el);
+    // Nothing to hear first: the question is on screen.
+    this.heard = true;
+    this.drawStage();
+    this.drawMain();
+    this.hooks.announce(`Question ${n}. Find ${spokenNote(b.note)}. ${boardRange(b)}.`);
+    this.board.focus();
+    this.startTimer();
+  }
+
+  private tapBoard(p: FretPos): void {
+    if (this.phase !== "ready") return;
+    this.answer(posId(p));
+  }
+
   private drawStage(note = ""): void {
     const q = this.q();
+    const stage = this.$(".stage");
+    stage.classList.toggle("is-board", !!q.board);
+    if (q.board) {
+      stage.innerHTML = `
+        <p class="prompt">Find</p>
+        <p class="find-note">${prettyNotes(q.board.note)}</p>
+        <p class="stage-note">${esc(boardRange(q.board))}</p>
+        ${this.rules.timeLimit !== null && this.timerSeconds() > 0 ? `<div class="timer" hidden><div class="timer-bar"><i></i></div><span class="timer-text"></span></div>` : ""}`;
+      return;
+    }
     const left = this.replaysLeft();
     const replayText = !this.heard
       ? "Tap play to hear it"
@@ -154,6 +198,12 @@ export class RoundView {
       btn.innerHTML = `${last ? "See results" : "Next"} ${sprite("next", 3)}`;
       btn.setAttribute("aria-label", last ? "See results" : "Next question");
       btn.disabled = false;
+      return;
+    }
+    if (this.q().board) {
+      btn.textContent = "Tap the neck";
+      btn.setAttribute("aria-label", "Tap the neck to answer");
+      btn.disabled = true;
       return;
     }
     const left = this.replaysLeft();
@@ -280,6 +330,9 @@ export class RoundView {
     const order = (ids: string[], id: string) =>
       ids.length > 1 ? ids.map((x, i) => (x === id ? ["1st", "2nd"][i] : null)).filter(Boolean).join(" and ") : "";
 
+    const tappedPos = q.board && choiceId ? parsePos(choiceId) : null;
+    const tappedName = tappedPos ? spellMidi(midiAt(tappedPos), !/b$/.test(q.board!.note)) : "";
+    if (q.board) this.board?.reveal(q.accept!.map(parsePos), tappedPos, tappedName, q.board.note);
     const answers = this.$(".answers");
     answers.classList.add("is-done");
     answers.querySelectorAll<HTMLElement>(".answer").forEach((b) => {
@@ -310,12 +363,12 @@ export class RoundView {
 
     const spokenOf = (ids: string[]) => ids.map((id) => q.choices.find((c) => c.id === id)!.spoken).join(", then ");
     const labelOf = (ids: string[]) => ids.map((id) => q.choices.find((c) => c.id === id)!.label).join(" ");
-    const right = { spoken: spokenOf(rightIds), label: labelOf(rightIds) };
-    const picked = choiceId ? { spoken: spokenOf(pickedIds), label: labelOf(pickedIds) } : null;
+    const right = q.board ? { spoken: spokenNote(q.board.note), label: q.board.note } : { spoken: spokenOf(rightIds), label: labelOf(rightIds) };
+    const picked = !choiceId ? null : q.board ? { spoken: spokenNote(tappedName), label: tappedName } : { spoken: spokenOf(pickedIds), label: labelOf(pickedIds) };
     const verdict = a.correct ? "Correct" : choiceId === null ? "Time's up" : "Not quite";
     this.$(".stage").innerHTML = `
       <div class="verdict ${a.correct ? "is-right" : "is-wrong"}">${sprite(a.correct ? "check" : "cross", 4)}<span>${verdict}</span></div>
-      <p class="verdict-answer">${a.correct ? "" : "Answer: "}${esc(cap(right.spoken))} ${right.spoken.startsWith(`${right.label},`) ? "" : `<span aria-hidden="true">(${prettyNotes(right.label)})</span>`}</p>
+      <p class="verdict-answer">${a.correct ? "" : "Answer: "}${esc(cap(right.spoken))} ${right.spoken === right.label || right.spoken.startsWith(`${right.label},`) ? "" : `<span aria-hidden="true">(${prettyNotes(right.label)})</span>`}</p>
       <p class="verdict-explain">${prettyNotes(q.explain)}${picked && !a.correct ? `<br>You picked ${esc(picked.spoken)}` : ""}</p>
       <div class="row">
         <button class="btn btn--small" type="button" data-act="again">${sprite("replay", 2)} Hear it again</button>
@@ -329,6 +382,17 @@ export class RoundView {
     this.hooks.announce(said);
     if (a.correct) sfx.correct();
     else sfx.wrong();
+    // Fretboard: you hear the note you tapped; after a miss, the right one nearest your tap.
+    if (q.board) {
+      if (tappedPos) void this.playClip(noteSound(tappedPos));
+      if (!a.correct && this.hooks.settings().autoplay) {
+        const near = nearest(q.accept!.map(parsePos), tappedPos);
+        window.setTimeout(() => {
+          if (this.phase === "feedback" && this.q() === q) void this.playClip(noteSound(near));
+        }, tappedPos ? 900 : 300);
+      }
+      return;
+    }
     // Wrong answers replay the right one, so the ear hears it again.
     if (!a.correct && this.hooks.settings().autoplay) {
       window.setTimeout(() => {
@@ -417,7 +481,7 @@ export class RoundView {
       this.next();
       return;
     }
-    if (this.phase !== "ready") return;
+    if (this.phase !== "ready" || this.q().board) return;
     if (/^[0-9]$/.test(e.key)) {
       const i = e.key === "0" ? 9 : Number(e.key) - 1;
       const choice = this.q().choices[i];
@@ -432,6 +496,20 @@ export class RoundView {
       void this.play();
     }
   }
+}
+
+/** "Low E and A strings, frets 0 to 5". */
+function boardRange(b: NonNullable<Question["board"]>): string {
+  const names = ["low E", "A", "D", "G", "B", "high E"];
+  const strings = b.strings.length === 6 ? "All strings" : cap(`${b.strings.map((s) => names[s]).join(" and ")} strings`);
+  return `${strings}, frets ${b.frets[0]} to ${b.frets[1]}`;
+}
+
+/** The right spot closest to where you tapped (or the first one). */
+function nearest(spots: FretPos[], from: FretPos | null): FretPos {
+  if (!from) return spots[0]!;
+  const d = (p: FretPos) => Math.abs(p.fret - from.fret) * 2 + Math.abs(p.string - from.string);
+  return spots.reduce((best, p) => (d(p) < d(best) ? p : best), spots[0]!);
 }
 
 function cap(s: string): string {

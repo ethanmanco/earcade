@@ -4,7 +4,7 @@ An 8-bit ear and theory trainer for your phone. Quick rounds of 10 questions: he
 
 **Play it: [ethanmanco.github.io/earcade](https://ethanmanco.github.io/earcade/)**
 
-> Work in progress. Intervals, Chords and Scale degrees are playable at all four levels; Fretboard, and XP, streaks and stats are next.
+> Work in progress. All four modes are playable at all four levels; XP, streaks and the stats page are next.
 
 ## Modes and levels
 
@@ -15,13 +15,13 @@ Every mode has four levels. Pick any level; after a strong round the game sugges
 | **Intervals**: hear two notes, name the interval | Minor 3rd, major 3rd, perfect 5th, octave. Going up. | Every interval within an octave. Going up. | Every interval within an octave: up, down and together. | Up to two octaves, every direction, one replay, 8 seconds. |
 | **Chords**: hear a chord, name its quality | Major or minor. | Adds diminished, augmented, sus2 and sus4. | 7th chords: major 7, dominant 7, minor 7, minor 7 flat 5 (half diminished), diminished 7. | 7th chords in every inversion and in drop 2 voicings, plus dominant 9, major 9, minor 9, minor 11 and dominant 13 in close, open and shell voicings. One replay. |
 | **Scale degrees**: hear a progression that sets the key, then a note; name its degree | 1, 3 and 5 in major keys. | All 7 degrees in major keys. | Major and minor keys, all 12 notes including chromatic ones. | A new key every question, two-note phrases (two picks, in order), the key plays only once. One replay of the notes. |
-| **Fretboard** (coming) | Natural notes, two lowest strings, frets 0 to 5 | Natural notes, all strings, frets 0 to 12 | Sharps and flats, frets 0 to 12 | The whole neck to fret 15, timed |
+| **Fretboard**: a note name appears; tap where it is on the neck | Natural notes on the two lowest strings, frets 0 to 5. | Natural notes on all strings, frets 0 to 12. | Sharps and flats too, all strings, frets 0 to 12. | Every note on the whole neck to fret 15, 6 seconds each. |
 
 ## How a round works
 
 - Scale degrees sets the key with I IV V I (i iv V i in minor). Below Master a round stays in one key. Degrees are always named against the major scale (flat 3, flat 6, flat 7), so a name means the same sound in major and minor keys.
 
-- 10 questions. Tap Play (or let it play itself), then pick an answer.
+- 10 questions. Tap Play (or let it play itself), then pick an answer. Fretboard shows a note to find instead, and plays the note you tap.
 - Right or wrong shows straight away, with a check or a cross and words, never color alone. A miss replays the right answer, and **Hear yours** plays what you picked, so you can compare the two.
 - At the end: your score, how you did on each item (for example "perfect 5th: 2 of 3"), and what to practice.
 - Items you miss come up more often in later rounds.
@@ -29,16 +29,17 @@ Every mode has four levels. Pick any level; after a strong round the game sugges
 ## Accessibility
 
 - Every button has a spoken name ("minor 3rd", not "min 3"), and right or wrong is announced.
-- Keyboard: 1 to 9 and 0 pick answers, R or Space plays or replays, Enter goes to the next question.
+- Keyboard: 1 to 9 and 0 pick answers, R or Space plays or replays, Enter goes to the next question. On the fretboard, the arrow keys move along the neck and Enter taps.
+- The fretboard is a grid a screen reader can walk ("A string, fret 3"). Spots never say their note until you answer, so the answer is not given away.
 - Settings: piano or guitar, volume, reduced motion, auto-play on or off (so a screen reader and the notes don't talk over each other), and a Master time limit of normal, double or off.
 
 ## Built with
 
-Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and question code is kept apart from the screen and tested on its own: every interval, chord and scale degree is checked in every key, every inversion and voicing is checked, and every level is checked to ask only what it should.
+Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and question code is kept apart from the screen and tested on its own: every interval, chord and scale degree is checked in every key, every spot on the neck is checked under both spellings, every inversion and voicing is checked, and every level is checked to ask only what it should.
 
 Parts come from my other projects:
 
-- [Sixline](https://github.com/ethanmanco/sixline): music theory helpers, the guitar sound and the guitar samples.
+- [Sixline](https://github.com/ethanmanco/sixline): music theory helpers, the guitar sound, the guitar samples and the accessible fretboard grid.
 - [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit look, the space backdrop, chiptune game sounds and the safe saved-data pattern.
 
 ```bash

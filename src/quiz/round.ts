@@ -79,8 +79,11 @@ export class Round {
     const q = this.current;
     if (!q) throw new Error("The round is over");
     const picked = choiceId ? choiceId.split(" ") : [];
-    const parts = partsOf(q).map((itemId, i) => ({ itemId, correct: picked[i] === itemId }));
-    const a: Answer = { itemId: q.itemId, chosen: choiceId, correct: choiceId === q.answer, parts };
+    const correct = choiceId !== null && (q.accept ? q.accept.includes(choiceId) : choiceId === q.answer);
+    const parts = q.accept
+      ? [{ itemId: q.itemId, correct }]
+      : partsOf(q).map((itemId, i) => ({ itemId, correct: picked[i] === itemId }));
+    const a: Answer = { itemId: q.itemId, chosen: choiceId, correct, parts };
     this.answers.push(a);
     return a;
   }
