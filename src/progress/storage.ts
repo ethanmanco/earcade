@@ -4,6 +4,7 @@
 
 import { HISTORY_LENGTH } from "../quiz/adaptive";
 import { LEVEL_IDS, type ItemHistory, type LevelId, type ModeId } from "../quiz/types";
+import { emptyStreak, type Streak } from "./progress";
 
 export type MotionPref = "system" | "reduce" | "full";
 export type TimerPref = "normal" | "double" | "off";
@@ -42,6 +43,9 @@ export interface Saved {
   rounds: RoundRecord[];
   /** Last level played per mode. */
   lastLevel: Partial<Record<ModeId, LevelId>>;
+  /** All XP earned (kept apart from rounds, which are capped). */
+  xp: number;
+  streak: Streak;
 }
 
 const KEY = "earcade:v1";
@@ -53,7 +57,7 @@ export function defaultSettings(): Settings {
 }
 
 export function defaults(): Saved {
-  return { settings: defaultSettings(), history: {}, rounds: [], lastLevel: {} };
+  return { settings: defaultSettings(), history: {}, rounds: [], lastLevel: {}, xp: 0, streak: emptyStreak() };
 }
 
 const isMode = (v: unknown): v is ModeId => MODE_IDS.includes(v as ModeId);
@@ -112,7 +116,12 @@ export function load(storage: Pick<Storage, "getItem"> | null = safeStorage()): 
     if (v.lastLevel && typeof v.lastLevel === "object") {
       for (const [m, l] of Object.entries(v.lastLevel)) if (isMode(m) && isLevel(l)) lastLevel[m] = l;
     }
+    const st = (v.streak ?? {}) as Partial<Streak>;
+    const current = count(st.current) ?? 0;
+    const lastDay = typeof st.lastDay === "string" && /^\d{4}-\d{2}-\d{2}$/.test(st.lastDay) ? st.lastDay : null;
     return {
+      xp: count(v.xp) ?? 0,
+      streak: { current: lastDay ? current : 0, best: Math.max(count(st.best) ?? 0, lastDay ? current : 0), lastDay },
       settings: cleanSettings(v.settings),
       history,
       rounds: Array.isArray(v.rounds) ? v.rounds.map(cleanRound).filter((r): r is RoundRecord => r !== null).slice(-MAX_ROUNDS) : [],

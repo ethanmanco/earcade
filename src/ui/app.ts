@@ -21,6 +21,8 @@ import {
 import { esc, frac } from "./html";
 import { prettyNotes } from "./notes";
 import { RoundView } from "./roundView";
+import { progressPanel, statsPage } from "./stats";
+import { bumpStreak, dayKey, emptyStreak, playerLevel, xpForRound } from "../progress/progress";
 import { paintSpace } from "./space";
 import { logo, sprite, type SpriteName } from "./sprites";
 
@@ -106,6 +108,7 @@ export class App {
 
   private route(): void {
     const [mode, sub] = location.hash.replace(/^#/, "").split("/");
+    if (mode === "stats") return this.showStats();
     const info = MODES.find((m) => m.id === mode);
     if (!info || !info.ready) return this.showHome();
     if (sub === "round" && this.roundView) return;
@@ -144,9 +147,11 @@ export class App {
       <header class="topbar">
         <h1 class="title" tabindex="-1">${logo(3)}<span>Earcade</span></h1>
         <div class="topbar-end">
+          <button class="icon-btn" type="button" data-act="stats" aria-label="Stats">${sprite("chart", 3)}</button>
           <button class="icon-btn" type="button" data-act="settings" aria-label="Settings">${sprite("gear", 3)}</button>
         </div>
       </header>
+      ${progressPanel(this.saved, dayKey(new Date()))}
       <p class="tagline">Train your ear in quick rounds of 10. Pick a mode to start.</p>
       <h2 class="sr-only">Modes</h2>
       <ul class="tiles">${tiles}</ul>`);
@@ -155,6 +160,35 @@ export class App {
       b.addEventListener("click", () => this.go(`#${b.dataset.mode}`)),
     );
     this.view.querySelector('[data-act="settings"]')!.addEventListener("click", () => this.openSettings());
+    this.view.querySelector('[data-act="stats"]')!.addEventListener("click", () => this.go("#stats"));
+  }
+
+  // ---------------------------------------------------------------- stats
+
+  private showStats(): void {
+    this.show(statsPage(this.saved, dayKey(new Date())));
+    this.view.querySelector('[data-act="home"]')!.addEventListener("click", () => this.go(""));
+    const reset = this.view.querySelector<HTMLButtonElement>('[data-act="reset"]')!;
+    const note = this.view.querySelector<HTMLElement>("#reset-note")!;
+    let armed: number | null = null;
+    // Two taps, so progress is never erased by accident.
+    reset.addEventListener("click", () => {
+      if (armed === null) {
+        reset.textContent = "Tap again to erase";
+        note.textContent = "Tap Reset progress again within 5 seconds to erase your progress.";
+        armed = window.setTimeout(() => {
+          armed = null;
+          reset.textContent = "Reset progress";
+          note.textContent = "";
+        }, 5000);
+        return;
+      }
+      window.clearTimeout(armed);
+      this.saved = { ...this.saved, history: {}, rounds: [], lastLevel: {}, xp: 0, streak: emptyStreak() };
+      this.persist();
+      this.showStats();
+      this.announce("Progress erased.");
+    });
   }
 
   // ---------------------------------------------------------------- level picker
@@ -204,6 +238,8 @@ export class App {
     void instrument.ensureReady().catch(() => undefined);
     const rng = new Rng(this.seed ?? randomSeed());
     const round = new Round(mode, level, historyFor(this.saved, mode, level), rng);
+    // Dev only: lets scripts/record-demo.mjs see the round, to pick right and wrong answers on purpose.
+    if (import.meta.env.DEV) (window as unknown as { __round?: Round }).__round = round;
     this.saved.lastLevel[mode] = level;
     this.persist();
     history.pushState(null, "", `#${mode}/round`);
@@ -236,6 +272,14 @@ export class App {
     if (rules.timeLimit !== null && this.settings.timer !== "normal") rec.timer = this.settings.timer;
     this.saved.rounds.push(rec);
     if (this.saved.rounds.length > MAX_ROUNDS) this.saved.rounds.splice(0, this.saved.rounds.length - MAX_ROUNDS);
+    const gained = xpForRound(rec);
+    const levelBefore = playerLevel(this.saved.xp).level;
+    this.saved.xp += gained;
+    const levelAfter = playerLevel(this.saved.xp).level;
+    const streakBefore = this.saved.streak.current;
+    this.saved.streak = bumpStreak(this.saved.streak, dayKey(new Date()));
+    const streak = this.saved.streak;
+    const streakGrew = streak.current > streakBefore || streak.current === 1;
     this.persist();
     history.replaceState(null, "", `#${s.mode}`);
     sfx.fanfare();
@@ -248,7 +292,7 @@ export class App {
     const rows = s.items
       .map(
         (it) => `<li class="item-row">
-          <span class="item-name">${esc(cap(it.spoken))} <span aria-hidden="true">(${prettyNotes(it.label)})</span></span>
+          <span class="item-name">${esc(cap(it.spoken))}${it.label === it.spoken ? "" : ` <span aria-hidden="true">(${prettyNotes(it.label)})</span>`}</span>
           <span class="item-score">${it.right} of ${it.total}</span>
           <span class="item-bar" aria-hidden="true">${Array.from({ length: it.total }, (_, i) => `<i class="${i < it.right ? "is-right" : "is-wrong"}"></i>`).join("")}</span>
         </li>`,
@@ -266,6 +310,11 @@ export class App {
         <p class="score-big">${frac(s.score, s.total)}</p>
         <p class="score-line">${pct}% right. ${esc(modeInfo(s.mode).name)}, ${LEVEL_NAMES[s.level]}.</p>
         <p class="score-line">${cheer}</p>
+      </section>
+      <section class="panel reward" aria-label="XP and streak">
+        <p class="reward-xp">+${gained} XP</p>
+        ${levelAfter > levelBefore ? `<p class="reward-up">${sprite("star", 3)} Level up! You're level ${levelAfter}.</p>` : `<p class="score-line">Level ${levelAfter}, ${this.saved.xp} XP in all.</p>`}
+        <p class="streak is-on">${sprite("flame", 2)}<span>${streak.current} day streak${streakGrew && streak.current > 1 && streak.current === streak.best ? ". New best!" : ""}</span></p>
       </section>
       ${
         suggestion
@@ -287,7 +336,9 @@ export class App {
         <button class="btn btn--go" type="button" data-act="again">Play again</button>
         <button class="btn" type="button" data-act="levels">Levels</button>
       </div>`);
-    this.announce(`Round complete. ${s.score} of ${s.total}. ${cheer}${suggestion ? ` You're ready for ${LEVEL_NAMES[suggestion]}.` : ""}`);
+    this.announce(
+      `Round complete. ${s.score} of ${s.total}. ${cheer} Plus ${gained} XP.${levelAfter > levelBefore ? ` Level up, you're level ${levelAfter}.` : ""} ${streak.current} day streak.${suggestion ? ` You're ready for ${LEVEL_NAMES[suggestion]}.` : ""}`,
+    );
 
     this.view.querySelector('[data-act="again"]')!.addEventListener("click", () => this.startRound(s.mode, s.level));
     this.view.querySelector('[data-act="levels"]')!.addEventListener("click", () => this.go(`#${s.mode}`));

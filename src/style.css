@@ -73,6 +73,7 @@ h1, h2, h3, p { margin: 0; }
   display: flex; align-items: center; gap: 10px;
   font-size: 22px; font-weight: 700; color: var(--gold); text-transform: uppercase; text-shadow: 2px 2px 0 #000;
 }
+.title { min-width: 0; }
 .title--small { font-size: 16px; flex-direction: column; align-items: flex-start; gap: 2px; line-height: 1.1; }
 .title-sub { font-size: 12px; color: var(--accent); }
 .topbar-end { margin-left: auto; display: flex; align-items: center; gap: 8px; }
@@ -290,6 +291,35 @@ h1, h2, h3, p { margin: 0; }
 .item-bar i.is-right { background: var(--right); }
 .item-bar i.is-wrong { background: var(--wrong); }
 .practice { font-size: 13px; line-height: 1.6; }
+
+/* ------------------------------------------------------------------ progress */
+.progress { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+.progress-row { display: flex; align-items: center; gap: 10px; }
+.lv { font-size: 14px; color: #1a1408; background: var(--gold); padding: 4px 7px 3px; clip-path: var(--step); white-space: nowrap; }
+.xpbar { flex: 1; height: 12px; background: #ffffff1f; clip-path: var(--step); }
+.xpbar i { display: block; height: 100%; background: var(--accent); }
+.xp-text { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.streak { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+.streak .icon { color: #6b6f8f; }
+.streak.is-on { color: var(--ink); }
+.streak.is-on .icon { color: #ff9f43; }
+.reward { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.reward-xp { font-size: 26px; color: var(--accent); text-shadow: 2px 2px 0 #000; }
+.reward-up { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--gold); }
+
+/* ------------------------------------------------------------------ stats */
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin: 6px 0 0; font-size: 13px; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; text-align: right; color: var(--gold); }
+.stat-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+.stat-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.stat-level { font-size: 14px; text-transform: uppercase; }
+.stat-acc { font-size: 16px; color: var(--gold); }
+.stat-meta { grid-column: 1 / -1; font-size: 11px; line-height: 1.5; color: var(--muted); }
+.stat-row.is-empty .stat-meta { grid-column: auto; text-align: right; }
+.spark { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 2px; height: 32px; border-bottom: 2px solid #ffffff33; }
+.spark i { width: 14px; background: var(--gold); }
+.btn--danger { background: var(--wrong); margin-top: 8px; }
 .spacer { flex: 1; }
 
 /* ------------------------------------------------------------------ settings dialog */
