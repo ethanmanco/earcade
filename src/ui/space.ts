@@ -29,6 +29,7 @@ export function paintSpace(canvas: HTMLCanvasElement, twinkleLayer: HTMLElement)
   const draw = () => {
     const w = Math.ceil(window.innerWidth / PX);
     const h = Math.ceil(window.innerHeight / PX);
+    if (w <= 0 || h <= 0) return;
     const key = `${w}x${h}`;
     if (key === last) return;
     last = key;

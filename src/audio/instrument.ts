@@ -146,6 +146,11 @@ class Instrument {
     end?.();
   }
 
+  /** Whether the chosen instrument's samples are loaded. */
+  isLoaded(): boolean {
+    return this.samplers.has(this.current);
+  }
+
   get isPlaying(): boolean {
     return this.endCurrent !== null;
   }

@@ -28,6 +28,11 @@ describe("interval table", () => {
     INTERVALS.forEach((iv, i) => expect(iv.semitones).toBe(i + 1));
   });
 
+  it("button labels never look alike in an all-capitals font", () => {
+    const labels = INTERVALS.map((i) => i.label.toUpperCase());
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
   it.each(Object.entries(EXPECTED))("%s is %s semitones with the right name", (id, [semis, name]) => {
     const d = intervalDef(id);
     expect(d.semitones).toBe(semis);

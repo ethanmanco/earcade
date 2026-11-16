@@ -58,7 +58,7 @@ export const HIGH_MIDI = 81;
 const DIRECTION_TAG: Record<Direction, string> = { up: "Up", down: "Down", together: "Together" };
 
 function choicesFor(items: readonly string[]): Choice[] {
-  return INTERVALS.filter((i) => items.includes(i.id)).map((i) => ({ id: i.id, label: i.id, spoken: i.name }));
+  return INTERVALS.filter((i) => items.includes(i.id)).map((i) => ({ id: i.id, label: i.label, spoken: i.name }));
 }
 
 /** Notes 0.75 s apart, or both at once, from a low and a high MIDI note. */

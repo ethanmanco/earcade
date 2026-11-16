@@ -1,0 +1,67 @@
+# Earcade
+
+An 8-bit ear and theory trainer for your phone. Quick rounds of 10 questions: hear it, name it, and hear the right answer when you miss.
+
+**Play it: [ethanmanco.github.io/earcade](https://ethanmanco.github.io/earcade/)**
+
+> Work in progress. Intervals is playable at all four levels; Chords, Scale degrees, Fretboard, and XP, streaks and stats are next.
+
+## Modes and levels
+
+Every mode has four levels. Pick any level; after a strong round the game suggests the next one.
+
+| Mode | Beginner | Intermediate | Professional | Master |
+| --- | --- | --- | --- | --- |
+| **Intervals**: hear two notes, name the interval | Minor 3rd, major 3rd, perfect 5th, octave. Going up. | Every interval within an octave. Going up. | Every interval within an octave: up, down and together. | Up to two octaves, every direction, one replay, 8 seconds. |
+| **Chords** (coming) | Major or minor | Adds diminished, augmented, sus2, sus4 | 7th chords | Inversions and extended chords |
+| **Scale degrees** (coming) | 1, 3 and 5 in major keys | All 7 degrees, major keys | Major and minor keys, with chromatic notes | Random keys, two-note phrases, the key plays once |
+| **Fretboard** (coming) | Natural notes, two lowest strings, frets 0 to 5 | Natural notes, all strings, frets 0 to 12 | Sharps and flats, frets 0 to 12 | The whole neck to fret 15, timed |
+
+## How a round works
+
+- 10 questions. Tap Play (or let it play itself), then pick an answer.
+- Right or wrong shows straight away, with a check or a cross and words, never color alone. A miss replays the right answer, and **Hear yours** plays what you picked, so you can compare the two.
+- At the end: your score, how you did on each item (for example "perfect 5th: 2 of 3"), and what to practice.
+- Items you miss come up more often in later rounds.
+
+## Accessibility
+
+- Every button has a spoken name ("minor 3rd", not "min 3"), and right or wrong is announced.
+- Keyboard: 1 to 9 and 0 pick answers, R or Space plays or replays, Enter goes to the next question.
+- Settings: piano or guitar, volume, reduced motion, auto-play on or off (so a screen reader and the notes don't talk over each other), and a Master time limit of normal, double or off.
+
+## Built with
+
+Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and question code is kept apart from the screen and tested on its own: every interval is checked in every key, and every level is checked to ask only what it should.
+
+Parts come from my other projects:
+
+- [Sixline](https://github.com/ethanmanco/sixline): music theory helpers, the guitar sound and the guitar samples.
+- [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit look, the space backdrop, chiptune game sounds and the safe saved-data pattern.
+
+```bash
+npm install
+npm run dev
+npm test
+```
+
+## Future ideas
+
+Not in this version:
+
+- Melody and rhythm dictation
+- A daily shared challenge
+- Leaderboards
+- Accounts
+- Microphone input (sing or play the answer)
+
+## Sound and font licenses
+
+- **Piano:** Salamander Grand Piano V3 by Alexander Holm, [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/). 19 unmodified MP3 files from the [Tone.js audio repository](https://github.com/Tonejs/audio/tree/master/salamander); see [public/samples/piano/CREDITS.txt](public/samples/piano/CREDITS.txt).
+- **Guitar:** steel-string acoustic guitar notes from the FluidR3_GM rendering in [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts) by Benjamin Gleitzman, [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/). The original Fluid (R3) General MIDI SoundFont is Copyright (c) 2000-2002, 2008 Frank Wen, MIT License. See [public/samples/guitar/CREDITS.txt](public/samples/guitar/CREDITS.txt).
+- **Game sounds:** synthesized in the browser; no audio files.
+- **Music theory:** [tonal](https://github.com/tonaljs/tonal), MIT License.
+- **Audio engine:** [Tone.js](https://github.com/Tonejs/Tone.js), MIT License.
+- **Fonts:** Silkscreen and Press Start 2P, SIL Open Font License, via Fontsource.
+
+Built with Claude Code. I designed, directed, reviewed, and tested it.
