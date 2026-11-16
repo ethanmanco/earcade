@@ -78,8 +78,15 @@ export class RoundView {
 
   // ---------------------------------------------------------------- drawing
 
+  /**
+   * The question on screen. Kept here rather than read from the round,
+   * because the round moves on to the next question as soon as one is
+   * answered, while this screen still shows (and replays) the answered one.
+   */
+  private question: Question | null = null;
+
   private q(): Question {
-    return this.round.current ?? this.round.questions[this.round.questions.length - 1]!;
+    return this.question ?? this.round.current!;
   }
 
   private $(sel: string): HTMLElement {
@@ -87,6 +94,7 @@ export class RoundView {
   }
 
   private showQuestion(): void {
+    this.question = this.round.current;
     const q = this.q();
     const n = this.round.index + 1;
     const total = this.round.questions.length;

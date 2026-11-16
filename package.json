@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "gifenc": "1.0.3",
+    "happy-dom": "21.0.4",
     "pngjs": "7.0.0",
     "puppeteer-core": "25.16.0",
     "typescript": "5.9.3",
