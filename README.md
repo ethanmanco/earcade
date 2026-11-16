@@ -4,7 +4,11 @@ An 8-bit ear and theory trainer for your phone. Quick rounds of 10 questions: he
 
 **Play it: [ethanmanco.github.io/earcade](https://ethanmanco.github.io/earcade/)**
 
-> Work in progress. All four modes are playable at all four levels; XP, streaks and the stats page are next.
+<p align="center">
+  <img src="docs/demo.gif" alt="Part of an Intervals round on a phone: a right answer, a miss that shows the right answer and a Hear yours button, then the results with 7 of 10, plus 105 XP, a level up and a 3 day streak." width="320">
+</p>
+
+It feels like a daily practice game: four modes, four levels each, XP, a daily streak and a stats page. No accounts, no ads; progress stays on your device.
 
 ## Modes and levels
 
@@ -17,14 +21,21 @@ Every mode has four levels. Pick any level; after a strong round the game sugges
 | **Scale degrees**: hear a progression that sets the key, then a note; name its degree | 1, 3 and 5 in major keys. | All 7 degrees in major keys. | Major and minor keys, all 12 notes including chromatic ones. | A new key every question, two-note phrases (two picks, in order), the key plays only once. One replay of the notes. |
 | **Fretboard**: a note name appears; tap where it is on the neck | Natural notes on the two lowest strings, frets 0 to 5. | Natural notes on all strings, frets 0 to 12. | Sharps and flats too, all strings, frets 0 to 12. | Every note on the whole neck to fret 15, 6 seconds each. |
 
-## How a round works
+Scale degrees sets the key with I IV V I (i iv V i in minor), and below Master a round stays in one key. Degrees are always named against the major scale (flat 3, flat 6, flat 7), so a name means the same sound in major and minor keys.
 
-- Scale degrees sets the key with I IV V I (i iv V i in minor). Below Master a round stays in one key. Degrees are always named against the major scale (flat 3, flat 6, flat 7), so a name means the same sound in major and minor keys.
+## How a round works
 
 - 10 questions. Tap Play (or let it play itself), then pick an answer. Fretboard shows a note to find instead, and plays the note you tap.
 - Right or wrong shows straight away, with a check or a cross and words, never color alone. A miss replays the right answer, and **Hear yours** plays what you picked, so you can compare the two.
 - At the end: your score, how you did on each item (for example "perfect 5th: 2 of 3"), and what to practice.
 - Items you miss come up more often in later rounds.
+
+## Progress
+
+- **XP:** 10 per right answer, times 1, 1.5, 2 or 3 from Beginner to Master, plus a bonus for a perfect round. XP adds up to player levels (level 2 at 100 XP, 3 at 300, 4 at 600, and so on).
+- **Daily streak:** finish at least one round a day to keep it going. The home screen says when today's round is still to play.
+- **Stats page:** accuracy for every mode and level, your last 10 rounds at each level as small bars (with the same scores as text), whether you're trending up or down, and your weakest items lately.
+- Everything is saved in your browser. If storage is blocked (some private windows), the game still works; it just won't remember. Stats has a two-tap Reset progress button.
 
 ## Accessibility
 
@@ -40,13 +51,16 @@ Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and questi
 Parts come from my other projects:
 
 - [Sixline](https://github.com/ethanmanco/sixline): music theory helpers, the guitar sound, the guitar samples and the accessible fretboard grid.
-- [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit look, the space backdrop, chiptune game sounds and the safe saved-data pattern.
+- [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit look, the space backdrop, chiptune game sounds, the safe saved-data pattern and the GIF recorder.
 
 ```bash
 npm install
 npm run dev
 npm test
+npm run demo -- http://localhost:5173/   # re-record docs/demo.gif (needs Chrome and the dev server)
 ```
+
+It deploys to GitHub Pages from `main` with a GitHub Actions workflow that runs the tests first. It installs to a phone's home screen and works offline once loaded.
 
 ## Future ideas
 
