@@ -51,7 +51,7 @@ Vite, TypeScript and [Tone.js](https://tonejs.github.io/). The theory and questi
 Parts come from my other projects:
 
 - [Sixline](https://github.com/ethanmanco/sixline): music theory helpers, the guitar sound, the guitar samples and the accessible fretboard grid.
-- [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit look, the space backdrop, chiptune game sounds, the safe saved-data pattern and the GIF recorder.
+- [Pocket Pixels](https://github.com/ethanmanco/pocket-pixels): the 8-bit pixel style, chiptune game sounds, the safe saved-data pattern and the GIF recorder.
 
 ```bash
 npm install

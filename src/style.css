@@ -1,5 +1,6 @@
-/* Earcade: phone-first 8-bit ear trainer. The look (palette, stepped corners,
-   buttons, menu dialog, space backdrop) comes from Pocket Pixels. */
+/* Earcade: phone-first 8-bit ear trainer with a VHS look. The pixel parts
+   (stepped corners, buttons, menu dialog) come from Pocket Pixels; the tape
+   noise, scanlines, tracking band and VCR display are Earcade's own. */
 
 /* Digits come from Press Start 2P (clearer 4 than Silkscreen), letters from Silkscreen. */
 @font-face {
@@ -11,17 +12,22 @@
 }
 
 :root {
-  --bg: #05050f;
-  --panel: #0d1033;
-  --panel-edge: #3d3a7a;
-  --accent: #36e2ff;
-  --ink: #f4f1de;
-  --muted: #a9b8c4;
-  --gold: #ffd166;
-  --btn: #2a2f6e;
-  --btn-hi: #3a4196;
-  --right: #13906f;
+  --bg: #07060c;
+  --panel: #13101d;
+  --panel-edge: #3b3452;
+  --accent: #2ef2ff;
+  --magenta: #ff3c9e;
+  --ink: #f2f0ff;
+  --muted: #aba6c0;
+  --gold: #ffe45c;
+  --btn: #2a2440;
+  --btn-hi: #3d3560;
+  --right: #138a62;
   --wrong: #a3306a;
+  /* The striped label on a blank tape. */
+  --label: linear-gradient(90deg, var(--magenta) 0 33.3%, var(--gold) 33.3% 66.6%, var(--accent) 66.6%);
+  /* Red and blue fringes, like a slightly misaligned picture. */
+  --split: -2px 0 #ff2a6dcc, 2px 0 #2ef2ffb3;
   --gutter: 16px;
   --font: "Pixel Digits", "Silkscreen", ui-monospace, Menlo, Consolas, monospace;
 
@@ -71,11 +77,11 @@ h1, h2, h3, p { margin: 0; }
 .topbar { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .title {
   display: flex; align-items: center; gap: 10px;
-  font-size: 22px; font-weight: 700; color: var(--gold); text-transform: uppercase; text-shadow: 2px 2px 0 #000;
+  font-size: 22px; font-weight: 700; color: var(--ink); text-transform: uppercase; text-shadow: var(--split);
 }
 .title { min-width: 0; }
 .title--small { font-size: 16px; flex-direction: column; align-items: flex-start; gap: 2px; line-height: 1.1; }
-.title-sub { font-size: 12px; color: var(--accent); }
+.title-sub { font-size: 12px; color: var(--accent); text-shadow: none; }
 .topbar-end { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .counter { font-size: 15px; color: var(--ink); white-space: nowrap; }
 
@@ -132,12 +138,13 @@ h1, h2, h3, p { margin: 0; }
   background: var(--panel); border: 0; cursor: pointer;
   clip-path: var(--step);
   box-shadow: inset 0 0 0 3px var(--panel-edge), inset 0 -6px 0 #0005;
-  padding: 12px 16px;
+  padding: 16px 16px 12px;
   touch-action: manipulation;
 }
+.tile { background: var(--label) 3px 3px / calc(100% - 6px) 4px no-repeat, var(--panel); }
 .tile:active:not(:disabled), .level:active { transform: translateY(2px); }
 .tile:disabled { cursor: default; opacity: 0.55; }
-.tile-icon { grid-row: 1 / span 3; width: 44px; height: 44px; display: grid; place-items: center; color: var(--accent); background: #0a0b22; clip-path: var(--step); }
+.tile-icon { grid-row: 1 / span 3; width: 44px; height: 44px; display: grid; place-items: center; color: var(--accent); background: #07060c; clip-path: var(--step); }
 .tile-name, .level-name { font-size: 17px; font-weight: 700; text-transform: uppercase; }
 .tile-blurb, .level-summary { font-size: 12px; line-height: 1.45; color: var(--muted); }
 .tile-meta, .level-meta { font-size: 12px; color: var(--gold); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
@@ -226,10 +233,10 @@ h1, h2, h3, p { margin: 0; }
 
 /* ------------------------------------------------------------------ fretboard */
 .stage.is-board { flex: none; min-height: 0; gap: 4px; }
-.find-note { font-size: 44px; color: var(--gold); text-shadow: 3px 3px 0 #000; line-height: 1; }
+.find-note { font-size: 44px; color: var(--ink); text-shadow: -3px 0 #ff2a6dcc, 3px 0 #2ef2ffb3; line-height: 1; }
 .answers--board { display: block; flex: 1; }
 .board {
-  --row: clamp(26px, calc((100dvh - 340px) / (var(--rows) + 1)), 50px);
+  --row: clamp(26px, calc((100dvh - 362px) / (var(--rows) + 1)), 50px);
   display: grid; grid-template-columns: 30px repeat(6, 1fr); grid-auto-rows: var(--row);
   background: #3b2416; clip-path: var(--step); padding: 0 8px 4px 0;
 }
@@ -278,7 +285,8 @@ h1, h2, h3, p { margin: 0; }
 .score {
   display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
 }
-.score-big { font-size: 46px; color: var(--gold); text-shadow: 3px 3px 0 #000; }
+.score-big { font-size: 46px; color: var(--ink); text-shadow: -3px 0 #ff2a6dcc, 3px 0 #2ef2ffb3; }
+.score { background: var(--label) 3px 3px / calc(100% - 6px) 4px no-repeat, var(--panel); padding-top: 18px; }
 .score-line { font-size: 14px; color: var(--muted); }
 .suggest { display: flex; flex-direction: column; gap: 10px; }
 .suggest p { display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 1.4; color: var(--gold); }
@@ -323,7 +331,12 @@ h1, h2, h3, p { margin: 0; }
 .spacer { flex: 1; }
 
 /* ------------------------------------------------------------------ settings dialog */
+/* The settings dialog is a VCR setup menu: white text on the old blue screen. */
 .menu {
+  --panel: #0c1f8f;
+  --btn: #13258a;
+  --btn-hi: #2a3fb0;
+  --muted: #c8d2ff;
   width: min(420px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
   padding: 18px 18px 14px;
@@ -331,11 +344,12 @@ h1, h2, h3, p { margin: 0; }
   background: var(--panel);
   color: var(--ink);
   font-family: var(--font);
-  box-shadow: inset 0 0 0 3px var(--panel-edge), inset 0 0 0 5px #04030c;
+  box-shadow: inset 0 0 0 3px #6f82ff, inset 0 0 0 5px #04030c;
   clip-path: var(--step);
 }
+.menu .btn { box-shadow: inset 0 0 0 2px #6f82ff, inset 0 -4px 0 #0006; }
 .menu::backdrop { background: #02020ac0; }
-.menu-title { margin: 0 0 10px; font-size: 20px; color: var(--gold); text-transform: uppercase; }
+.menu-title { margin: 0 0 10px; font-size: 20px; color: var(--ink); text-transform: uppercase; }
 .menu-section { padding: 12px 0; border-top: 2px dashed #ffffff26; }
 .menu-section h3, .menu-section label.h { display: block; margin: 0 0 8px; font-size: 14px; }
 .seg { display: flex; gap: 8px; }
@@ -348,15 +362,37 @@ h1, h2, h3, p { margin: 0; }
 .slider-value { min-width: 3.5em; text-align: right; font-size: 14px; }
 .menu-actions { padding-top: 12px; border-top: 2px dashed #ffffff26; }
 
-/* ------------------------------------------------------------------ space backdrop */
-.space { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; image-rendering: pixelated; }
-.twinkles { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-.twinkles i {
-  position: absolute; width: 3px; height: 3px; background: #fff;
-  box-shadow: 3px 0 #ffffff70, -3px 0 #ffffff70, 0 3px #ffffff70, 0 -3px #ffffff70;
-  opacity: 0.15; animation: twinkle 6s ease-in-out infinite;
+/* ------------------------------------------------------------------ VHS screen */
+.tape { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; image-rendering: pixelated; }
+/* Scanlines over everything, light enough that text keeps its contrast. */
+.scanlines {
+  position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, #00000038 2px 3px);
 }
-@keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.85; } }
+/* A tracking band that rolls down the screen now and then. */
+.tracking {
+  position: fixed; left: 0; right: 0; top: 0; height: 26px; z-index: 41; pointer-events: none;
+  background: var(--static, none) 0 0 / 288px 26px repeat-x, linear-gradient(transparent, #ffffff10 40%, #ffffff18 55%, transparent);
+  opacity: 0; mix-blend-mode: screen;
+  animation: tracking 13s linear 4s infinite;
+}
+@keyframes tracking {
+  0% { transform: translateY(-30px); opacity: 0; }
+  2% { opacity: 0.22; }
+  24% { opacity: 0.22; }
+  26%, 100% { transform: translateY(105vh); opacity: 0; }
+}
+/* The VCR on-screen display. */
+.osd {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 22px; padding: 2px 2px 0; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--ink); text-shadow: 2px 2px 0 #000;
+}
+.osd-state { display: inline-flex; align-items: center; gap: 8px; }
+.osd-state[data-state="play"] { color: var(--accent); }
+.osd-icon { filter: drop-shadow(2px 2px 0 #000); }
+.osd-counter { color: var(--muted); }
+@media (forced-colors: active) { .scanlines, .tracking, .osd { display: none; } }
 
 /* ------------------------------------------------------------------ motion */
 @keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
@@ -370,7 +406,7 @@ h1, h2, h3, p { margin: 0; }
 html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-motion="reduce"] *::after {
   animation: none !important; transition: none !important;
 }
-html[data-motion="reduce"] .twinkles i { opacity: 0.5; }
+html[data-motion="reduce"] .tracking { display: none; }
 
 /* ------------------------------------------------------------------ small phones */
 @media (max-height: 680px) {

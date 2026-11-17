@@ -23,7 +23,7 @@ import { prettyNotes } from "./notes";
 import { RoundView } from "./roundView";
 import { progressPanel, statsPage } from "./stats";
 import { bumpStreak, dayKey, emptyStreak, playerLevel, xpForRound } from "../progress/progress";
-import { paintSpace } from "./space";
+import { Vhs, type TapeState } from "./vhs";
 import { logo, sprite, type SpriteName } from "./sprites";
 
 const MODE_ICON: Record<ModeId, SpriteName> = { intervals: "note", chords: "chord", degrees: "stairs", fretboard: "frets" };
@@ -42,21 +42,15 @@ export class App {
   private roundView: RoundView | null = null;
   private seed = devSeed();
   private motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  private vhs: Vhs;
 
   constructor(root: HTMLElement) {
     this.saved = load();
-    root.innerHTML = `<div class="screen" id="view"></div><p class="sr-only" role="status" aria-live="polite"></p>`;
+    root.innerHTML = `<div class="osd"></div><div class="screen" id="view"></div><p class="sr-only" role="status" aria-live="polite"></p>`;
     this.view = root.querySelector("#view")!;
     this.live = root.querySelector('[role="status"]')!;
 
-    const canvas = document.createElement("canvas");
-    canvas.className = "space";
-    canvas.setAttribute("aria-hidden", "true");
-    const twinkles = document.createElement("div");
-    twinkles.className = "twinkles";
-    twinkles.setAttribute("aria-hidden", "true");
-    document.body.prepend(canvas, twinkles);
-    paintSpace(canvas, twinkles);
+    this.vhs = new Vhs(root.querySelector(".osd")!);
 
     for (const type of ["pointerdown", "keydown"] as const) document.addEventListener(type, unlockSfx);
     this.motionQuery.addEventListener("change", () => this.applySettings());
@@ -93,7 +87,8 @@ export class App {
     window.setTimeout(() => (this.live.textContent = text), 60);
   }
 
-  private show(html: string, focus = "h1"): void {
+  private show(html: string, focus = "h1", tape: TapeState = "menu"): void {
+    this.vhs.tape(tape);
     this.roundView?.destroy();
     this.roundView = null;
     this.view.innerHTML = html;
@@ -166,7 +161,7 @@ export class App {
   // ---------------------------------------------------------------- stats
 
   private showStats(): void {
-    this.show(statsPage(this.saved, dayKey(new Date())));
+    this.show(statsPage(this.saved, dayKey(new Date())), "h1", "rew");
     this.view.querySelector('[data-act="home"]')!.addEventListener("click", () => this.go(""));
     const reset = this.view.querySelector<HTMLButtonElement>('[data-act="reset"]')!;
     const note = this.view.querySelector<HTMLElement>("#reset-note")!;
@@ -256,6 +251,7 @@ export class App {
         this.go(`#${mode}`);
       },
       onDone: (r) => this.finishRound(r),
+      onTape: (playing) => this.vhs.tape(playing ? "play" : "pause"),
     });
     this.view.replaceChildren(view.el);
     this.roundView = view;
@@ -335,7 +331,7 @@ export class App {
       <div class="row">
         <button class="btn btn--go" type="button" data-act="again">Play again</button>
         <button class="btn" type="button" data-act="levels">Levels</button>
-      </div>`);
+      </div>`, "h1", "stop");
     this.announce(
       `Round complete. ${s.score} of ${s.total}. ${cheer} Plus ${gained} XP.${levelAfter > levelBefore ? ` Level up, you're level ${levelAfter}.` : ""} ${streak.current} day streak.${suggestion ? ` You're ready for ${LEVEL_NAMES[suggestion]}.` : ""}`,
     );

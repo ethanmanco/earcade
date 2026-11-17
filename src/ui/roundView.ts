@@ -23,6 +23,8 @@ export interface RoundHooks {
   onDone(round: Round): void;
   onQuit(): void;
   announce(text: string): void;
+  /** Sound playing or not, for the VCR display. */
+  onTape?(playing: boolean): void;
 }
 
 type Phase = "ready" | "feedback";
@@ -162,6 +164,7 @@ export class RoundView {
   }
 
   private drawStage(note = ""): void {
+    this.hooks.onTape?.(this.playing);
     const q = this.q();
     const stage = this.$(".stage");
     stage.classList.toggle("is-board", !!q.board);

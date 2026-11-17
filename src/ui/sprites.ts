@@ -32,21 +32,31 @@ export function sprite(name: SpriteName, scale = 3, className = "icon"): string 
   return pixelSVG(ART[name], MONO, scale, className);
 }
 
-/** The Earcade logo: a pair of pixel headphones. */
+/** The Earcade logo: a pixel VHS tape with a striped label. */
 export const LOGO_ROWS = [
-  "...kkkkkk...",
-  "..kaaaaaak..",
-  ".ka.kkkk.ak.",
-  ".kak....kak.",
-  "kak......kak",
-  "kak......kak",
-  "kkkk....kkkk",
-  "kggk....kggk",
-  "kgyk....kgyk",
-  "kggk....kggk",
-  "kkkk....kkkk",
+  "hhhhhhhhhhhhhhhh",
+  "hllllllllllllllk",
+  "hlmmmmyyyycccclk",
+  "hllllllllllllllk",
+  "hkkkkkkkkkkkkkkk",
+  "hkddddddddddddkk",
+  "hkdrrrddddrrrdkk",
+  "hkdrwrddddrwrdkk",
+  "hkdrrrddddrrrdkk",
+  "hkddddddddddddkk",
+  "kkkkkkkkkkkkkkkk",
 ];
-export const LOGO_PALETTE: Palette = { k: "#0a0b22", a: "#36e2ff", g: "#ffd166", y: "#fff3c4" };
+export const LOGO_PALETTE: Palette = {
+  h: "#5a5373",
+  k: "#2e2940",
+  l: "#f2f0ff",
+  m: "#ff3c9e",
+  y: "#ffe45c",
+  c: "#2ef2ff",
+  d: "#07060c",
+  r: "#6b6580",
+  w: "#f2f0ff",
+};
 
 export function logo(scale = 3): string {
   return pixelSVG(LOGO_ROWS, LOGO_PALETTE, scale, "logo");

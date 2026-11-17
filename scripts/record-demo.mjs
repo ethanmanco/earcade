@@ -31,8 +31,8 @@ await page.evaluate(() => {
 // A different query string, so this is a real reload that reads the saved data.
 await page.goto(`${BASE}?seed=21&demo=1#intervals`, { waitUntil: "networkidle0" });
 await page.evaluate(() => document.fonts.ready);
-// Hold the twinkling stars still so the GIF only changes when the game does.
-await page.addStyleTag({ content: ".twinkles i { animation: none !important; opacity: 0.5 !important; }" });
+// Hide the rolling tracking band so the GIF only changes when the game does.
+await page.addStyleTag({ content: ".tracking { display: none !important; }" });
 
 let recording = true;
 let stop = false;
